@@ -1,0 +1,8 @@
+{
+  "name": "Digital FTE: Autonomous AI Employee",
+  "description": "A proactive, local-first AI agent dashboard for managing personal and business affairs with Gemini reasoning and human-in-the-loop approvals.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

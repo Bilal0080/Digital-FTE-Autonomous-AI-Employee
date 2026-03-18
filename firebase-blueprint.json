@@ -1,0 +1,93 @@
+{
+  "entities": {
+    "VaultItem": {
+      "title": "Vault Item",
+      "description": "A markdown file or data entry in the AI Employee's vault.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "The name of the file or entry."
+        },
+        "content": {
+          "type": "string",
+          "description": "The markdown content of the item."
+        },
+        "path": {
+          "type": "string",
+          "description": "The virtual path in the vault (e.g., /Needs_Action/EMAIL_123.md)."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["email", "whatsapp", "finance", "plan", "log", "handbook", "dashboard"],
+          "description": "The category of the item."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "in_progress", "done", "approved", "rejected"],
+          "description": "The current state of the item."
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "urgent"],
+          "description": "The priority level."
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Additional structured data (e.g., from, subject, amount)."
+        },
+        "uid": {
+          "type": "string",
+          "description": "The owner's UID."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the item was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the item was last modified."
+        }
+      },
+      "required": ["title", "content", "path", "type", "status", "uid", "createdAt", "updatedAt"]
+    },
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Settings and configuration for the Digital FTE owner.",
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "businessGoals": {
+          "type": "string",
+          "description": "Markdown content of business goals."
+        },
+        "rulesOfEngagement": {
+          "type": "string",
+          "description": "Markdown content of the company handbook."
+        },
+        "uid": {
+          "type": "string"
+        }
+      },
+      "required": ["uid", "email"]
+    }
+  },
+  "firestore": {
+    "/vault": {
+      "schema": "VaultItem",
+      "description": "The core repository for all AI Employee data."
+    },
+    "/users": {
+      "schema": "UserProfile",
+      "description": "User-specific settings and profiles."
+    }
+  }
+}

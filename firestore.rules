@@ -1,0 +1,107 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - uid: string (required) - The user's unique ID
+    //   - email: string (required) - The user's email address
+    //   - displayName: string (optional) - The user's display name
+    //   - businessGoals: string (optional) - Markdown content
+    //   - rulesOfEngagement: string (optional) - Markdown content
+    //
+    // Collection: vault
+    // Document ID: {itemId}
+    // Fields:
+    //   - title: string (required) - File title
+    //   - content: string (required) - Markdown content
+    //   - path: string (required) - Virtual path (e.g., /Needs_Action/EMAIL_123.md)
+    //   - type: string (required) - enum: email, whatsapp, finance, plan, log, handbook, dashboard
+    //   - status: string (required) - enum: pending, in_progress, done, approved, rejected
+    //   - priority: string (optional) - enum: low, medium, high, urgent
+    //   - metadata: map (optional) - Additional structured data
+    //   - uid: string (required) - Owner's UID
+    //   - createdAt: timestamp (required) - Creation time
+    //   - updatedAt: timestamp (required) - Last update time
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+
+    function uidUnchanged() {
+      return !('uid' in request.resource.data) || request.resource.data.uid == request.auth.uid;
+    }
+
+    function uidNotModified() {
+      return !('uid' in request.resource.data) || request.resource.data.uid == resource.data.uid;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidVaultItem(data) {
+      return data.title is string && data.title.size() > 0 && data.title.size() < 255 &&
+             data.content is string && data.content.size() < 100000 &&
+             data.path is string && data.path.size() > 0 &&
+             data.type in ['email', 'whatsapp', 'finance', 'plan', 'log', 'handbook', 'dashboard'] &&
+             data.status in ['pending', 'in_progress', 'done', 'approved', 'rejected'] &&
+             data.uid == request.auth.uid &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidUser(data) {
+      return data.uid == request.auth.uid &&
+             data.email is string && isValidEmail(data.email) &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() < 100)) &&
+             (!('businessGoals' in data) || (data.businessGoals is string && data.businessGoals.size() < 50000)) &&
+             (!('rulesOfEngagement' in data) || (data.rulesOfEngagement is string && data.rulesOfEngagement.size() < 50000));
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.email == "bilaltanoli986@gmail.com" && request.auth.token.email_verified == true
+      );
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && uidNotModified();
+      allow delete: if isAdmin();
+    }
+
+    match /vault/{itemId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidVaultItem(request.resource.data);
+      allow update: if isDocOwner() && isValidVaultItem(request.resource.data) && uidNotModified();
+      allow delete: if isDocOwner() || isAdmin();
+    }
+  }
+}
